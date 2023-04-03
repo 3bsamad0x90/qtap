@@ -102,10 +102,6 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserPaymentMethods::class,'user_id');
     }
-    public function bookReviews()
-    {
-        return $this->hasMany(BookReviews::class,'user_id');
-    }
     public function favorites()
     {
         return $this->hasMany(UserFavorites::class,'user_id');
@@ -169,13 +165,38 @@ class User extends Authenticatable
     }
     public function cart()
     {
-      return $this->orders()->where('status', 'pending');
+      return $this->orders()->where('status', 'pending')->get();
     }
-    public function myCart()
+    public function cartItems()
     {
-      return $this->cart()->first()->items;
+      $lang = app()->getLocale();
+      $cartItems = $this->cart();
+      $cartItemsArray = [];
+      $totalPrice = 0;
+      $totalItems = 0;
+      foreach ($cartItems as $cartItem) {
+       foreach ($cartItem->items as $item) {
+         $cartItemsArray[] = [
+           'id' => $item->id,
+            'product' => $item->product['title_'.$lang],
+           'price' => $item->price,
+           'quantity' => $item->quantity,
+           'total' => $item->price * $item->quantity,
+           'image' => $item->product->photoLink(),
+            'product_id' => $item->product_id,
+            'order_id' => $item->order_id,
+         ];
+         $totalPrice += $item->price * $item->quantity;
+        }
+        $totalItems += $cartItem->items->count();
     }
+      return [
+        'cartItems' => $cartItemsArray,
+        'totalPrice' => $totalPrice,
+        'totalItems' => $totalItems
+      ];
 
+  }
 
 
 }

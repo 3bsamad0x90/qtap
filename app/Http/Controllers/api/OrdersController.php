@@ -36,30 +36,14 @@ class OrdersController extends Controller
         ]);
       }
     }
-    $userOrder = Orders::where('user_id', $user->id)->first();
-    if($userOrder){
-      $cartItem = OrderItems::where('order_id', $userOrder->id)->where('product_id', $request->product_id)->first();
-      if($cartItem){
-        $cartItem->quantity += $request->quantity;
-        $cartItem->total = $cartItem->quantity * $cartItem->price;
-        $cartItem->save();
-      }else{
-          $dateTime = date('Y-m-d H:i:s');
-          $order = Orders::create([
-            'user_id' => $user->id,
-            'date_time' => $dateTime,
-            'date_time_str' => strtotime($dateTime),
-            'total' => $request->price,
-          ]);
-        $orderItem = OrderItems::create([
-          'order_id' => $order->id,
-          'product_id' => $request->product_id,
-          'quantity' => $request->quantity,
-          'price' => $request->price,
-          'total' => $request->price * $request->quantity,
-        ]);
-      }
-    }else{
+    $userCart = OrderItems::where('user_id', auth()->id())
+      ->where('product_id', $request->product_id)
+      ->first();
+    if ($userCart) {
+      $userCart->quantity += $request->quantity;
+      $userCart->total = $userCart->quantity * $userCart->price;
+      $userCart->update();
+    } else {
       $dateTime = date('Y-m-d H:i:s');
       $order = Orders::create([
         'user_id' => $user->id,
@@ -73,13 +57,19 @@ class OrdersController extends Controller
         'quantity' => $request->quantity,
         'price' => $request->price,
         'total' => $request->price * $request->quantity,
+        'user_id' => $user->id,
       ]);
     }
+    if(isset($orderItem) || isset($userCart)){
+      return response()->json([
+        'status' => true,
+        'message' => trans('common.AddedToCartSuccessfully'),
+        'userCart' => $user->cartItems()
+      ]);
+    }else{
+      return response()->json(['status' => false, 'message' => trans('common.FailedToAddToCart')]);
+    }
 
-    return response()->json([
-      'status' => 'success',
-      'message' => 'Added To Cart Successfully',
-    ]);
   }
   //Get Cart
   public function getCart(Request $request)

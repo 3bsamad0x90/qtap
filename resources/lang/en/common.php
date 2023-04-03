@@ -334,4 +334,7 @@ return [
     'keywords_en' => 'Keywords in english',
     'categories' => 'Categories',
     'category' => 'Category',
+  'FailedToAddToCart' => 'Failed to add to cart',
+  'AddedToCartSuccessfully' => 'Added to cart successfully',
+
 ];

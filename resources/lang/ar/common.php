@@ -410,4 +410,6 @@ return [
     'text_ar' => 'النص بالعربية',
     'text_en' => 'النص بالإنجليزية',
     'productOptions' => 'خيارات المنتجات',
+    'FailedToAddToCart' => 'فشل في إضافة المنتج إلى السلة',
+    'AddedToCartSuccessfully' => 'تمت إضافة المنتج إلى السلة بنجاح',
 ];
