@@ -107,7 +107,9 @@ class OrdersController extends Controller
   {
     $lang = $request->header('lang');
     $user = auth()->user();
-    $cart = OrderItems::where('product_id', $id)->first();
+    $cart = OrderItems::where('user_id', auth()->id())
+      ->where('product_id', $id)
+      ->first();
     if (checkUserForApi($lang, $user->id) !== true) {
       return checkUserForApi($lang, $user->id);
     }
