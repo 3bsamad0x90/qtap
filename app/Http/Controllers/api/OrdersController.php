@@ -24,6 +24,7 @@ class OrdersController extends Controller
     $rules = [
       'product_id' => 'required',
       'price' => 'required',
+      'quantity' => 'required',
     ];
     $validator = Validator::make($request->all(), $rules);
     if ($validator->fails()) {
@@ -35,16 +36,21 @@ class OrdersController extends Controller
         ]);
       }
     }
-    $product = Products::find($request->product_id);
-    if ($product) {
-      if ($product->price == $request->price) {
-        $dateTime = date('Y-m-d H:i:s');
-        $order = Orders::create([
-          'user_id' => $user->id,
-          'date_time' => $dateTime,
-          'date_time_str' => strtotime($dateTime),
-          'total' => $request->price,
-        ]);
+    $userOrder = Orders::where('user_id', $user->id)->first();
+    if($userOrder){
+      $cartItem = OrderItems::where('order_id', $userOrder->id)->where('product_id', $request->product_id)->first();
+      if($cartItem){
+        $cartItem->quantity += $request->quantity;
+        $cartItem->total = $cartItem->quantity * $cartItem->price;
+        $cartItem->save();
+      }else{
+          $dateTime = date('Y-m-d H:i:s');
+          $order = Orders::create([
+            'user_id' => $user->id,
+            'date_time' => $dateTime,
+            'date_time_str' => strtotime($dateTime),
+            'total' => $request->price,
+          ]);
         $orderItem = OrderItems::create([
           'order_id' => $order->id,
           'product_id' => $request->product_id,
@@ -52,29 +58,28 @@ class OrdersController extends Controller
           'price' => $request->price,
           'total' => $request->price * $request->quantity,
         ]);
-      } else {
-        return response()->json([
-          'status' => false,
-          'message' => trans('api.PriceIsNotCorrect'),
-        ]);
       }
-      if ($order && $orderItem) {
-        return response()->json([
-          'status' => true,
-          'message' => trans('api.addToCartSuccess'),
-        ]);
-      } else {
-        return response()->json([
-          'status' => false,
-          'message' => trans('api.addToCartFailed'),
-        ]);
-      }
-    } else {
-      return response()->json([
-        'status' => false,
-        'message' => trans('api.ProductNotFound')
+    }else{
+      $dateTime = date('Y-m-d H:i:s');
+      $order = Orders::create([
+        'user_id' => $user->id,
+        'date_time' => $dateTime,
+        'date_time_str' => strtotime($dateTime),
+        'total' => $request->price,
+      ]);
+      $orderItem = OrderItems::create([
+        'order_id' => $order->id,
+        'product_id' => $request->product_id,
+        'quantity' => $request->quantity,
+        'price' => $request->price,
+        'total' => $request->price * $request->quantity,
       ]);
     }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Added To Cart Successfully',
+    ]);
   }
   //Get Cart
   public function getCart(Request $request)
@@ -112,7 +117,7 @@ class OrdersController extends Controller
   {
     $lang = $request->header('lang');
     $user = auth()->user();
-    $cart = OrderItems::find($id);
+    $cart = OrderItems::where('product_id', $id)->first();
     if (checkUserForApi($lang, $user->id) !== true) {
       return checkUserForApi($lang, $user->id);
     }
@@ -139,7 +144,7 @@ class OrdersController extends Controller
   {
       $lang = $request->header('lang');
       $user = auth()->user();
-      $cart = OrderItems::find($id);
+      $cart = OrderItems::where('product_id', $id)->first();
       if (checkUserForApi($lang, $user->id) !== true) {
         return checkUserForApi($lang, $user->id);
       }
@@ -181,9 +186,31 @@ class OrdersController extends Controller
           'status' => false,
           'message' => trans('api.CartIsEmpty'),
         ]);
-
-
-
+  }
+  public function myCart(Request $request){
+    $lang = $request->header('lang');
+    $user = auth()->user();
+    if (checkUserForApi($lang, $user->id) !== true) {
+      return checkUserForApi($lang, $user->id);
+    }
+    $userCart = Orders::where('user_id', $user->id)->get();
+    $cart = [];
+    foreach($userCart as $order){
+      $cart[] = $order->items->map(function ($item) use ($lang) {
+        return [
+          'id' => $item->id,
+          'product' => $item->product['title_' . $lang],
+          'image' => asset('uploads/products/' . $item->product->id . '/' . $item->product->image),
+          'price' => $item->price,
+          'quantity' => $item->quantity,
+          'total' => $item->total,
+        ];
+      });
+    }
+    return response()->json([
+      'status' => true,
+      'data' => $cart,
+    ]);
   }
 
 }

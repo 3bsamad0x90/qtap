@@ -18,7 +18,7 @@ class OrderItems extends Model
     public function order(){
         return $this->belongsTo(Orders::class,'order_id');
     }
-  
+
     public function typeText()
     {
         $text = trans('common.'.$this->book_type);

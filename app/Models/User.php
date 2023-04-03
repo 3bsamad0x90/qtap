@@ -167,18 +167,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(Orders::class,'user_id');
     }
-
     public function cart()
     {
-        return $this->orders()->where('status', 'pending')->first();
+      return $this->orders()->where('status', 'pending');
     }
-    public function myCart($lang){
-        $cart = $this->cart();
-        if ($cart != null) {
-            return $cart->apiData($lang);
-        }else {
-            return null;
-        }
+    public function myCart()
+    {
+      return $this->cart()->first()->items;
     }
+
+
 
 }
