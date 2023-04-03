@@ -60,16 +60,15 @@ class OrdersController extends Controller
         'user_id' => $user->id,
       ]);
     }
-    if(isset($orderItem) || isset($userCart)){
+    if (isset($orderItem) || isset($userCart)) {
       return response()->json([
         'status' => true,
         'message' => trans('common.AddedToCartSuccessfully'),
         'userCart' => $user->cartItems()
       ]);
-    }else{
+    } else {
       return response()->json(['status' => false, 'message' => trans('common.FailedToAddToCart')]);
     }
-
   }
   //Get Cart
   public function getCart(Request $request)
@@ -118,7 +117,7 @@ class OrdersController extends Controller
       $quantity = $cart->quantity;
       if ($request->action == 'increase') {
         $quantity += 1;
-      }else {
+      } else {
         if ($quantity > 1) {
           $quantity -= 1;
         }
@@ -134,54 +133,60 @@ class OrdersController extends Controller
   }
   public function removeItem(Request $request, $id)
   {
-      $lang = $request->header('lang');
-      $user = auth()->user();
-      $cart = OrderItems::where('user_id', auth()->id())
-        ->where('product_id', $id)
-        ->first();
-      if (checkUserForApi($lang, $user->id) !== true) {
-        return checkUserForApi($lang, $user->id);
-      }
-      if ($cart != '') {
-        $order = $cart->order;
-        if($order != ''){
-          if($order->subOrders->count() == 0){
-            $order->delete();
-          }
-          $cart->delete();
+    $lang = $request->header('lang');
+    $user = auth()->user();
+    $cart = OrderItems::where('user_id', auth()->id())
+      ->where('product_id', $id)
+      ->first();
+    if (checkUserForApi($lang, $user->id) !== true) {
+      return checkUserForApi($lang, $user->id);
+    }
+    if ($cart != '') {
+      $order = $cart->order;
+      if ($order != '') {
+        if ($order->subOrders->count() == 0) {
+          $order->delete();
         }
+        $cart->delete();
       }
-      $resArr = [
-        'status' => true,
-        'message' => trans('api.CartUpdatedSuccessfully'),
-        'userCart' =>  $user->cartItems()
-      ];
-      return response()->json($resArr);
+    }
+    $resArr = [
+      'status' => true,
+      'message' => trans('api.CartUpdatedSuccessfully'),
+      'userCart' =>  $user->cartItems()
+    ];
+    return response()->json($resArr);
   }
 
-  public function clearCart(Request $request){
-      $lang = $request->header('lang');
-      $user = auth()->user();
-      if (checkUserForApi($lang, $user->id) !== true) {
-        return checkUserForApi($lang, $user->id);
-      }
-      $orders = Orders::where('user_id', $user->id)->get();
-      if($orders != ''){
-        foreach($orders as $order){
-          $order->subOrders()->delete();
+  public function clearCart(Request $request)
+  {
+    $lang = $request->header('lang');
+    $user = auth()->user();
+    if (checkUserForApi($lang, $user->id) !== true) {
+      return checkUserForApi($lang, $user->id);
+    }
+    $orders = Orders::with('items')->where('user_id', $user->id)->get();
+    try {
+      if ($orders->count() > 0) {
+        foreach ($orders as $order) {
+          foreach ($order->items as $item) {
+            $item->delete();
+          }
           $order->delete();
-          return response()->json([
-            'status' => true,
-            'message' => trans('api.CartClearedSuccessfully'),
-          ]);
         }
-      }
+        return response()->json(['status' => true, 'message' => trans('common.Deleted!')]);
+      } else {
         return response()->json([
           'status' => false,
           'message' => trans('api.CartIsEmpty'),
         ]);
+      }
+    } catch (Exception $e) {
+      return $e;
+    }
   }
-  public function myCart(Request $request){
+  public function myCart(Request $request)
+  {
     $lang = $request->header('lang');
     $user = auth()->user();
     if (checkUserForApi($lang, $user->id) !== true) {
@@ -189,7 +194,7 @@ class OrdersController extends Controller
     }
     $userCart = Orders::where('user_id', $user->id)->get();
     $cart = [];
-    foreach($userCart as $order){
+    foreach ($userCart as $order) {
       $cart[] = $order->items->map(function ($item) use ($lang) {
         return [
           'id' => $item->id,
@@ -206,5 +211,4 @@ class OrdersController extends Controller
       'data' => $cart,
     ]);
   }
-
 }
