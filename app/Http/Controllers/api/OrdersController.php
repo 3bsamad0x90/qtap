@@ -136,23 +136,25 @@ class OrdersController extends Controller
   {
       $lang = $request->header('lang');
       $user = auth()->user();
-      $cart = OrderItems::where('product_id', $id)->first();
+      $cart = OrderItems::where('user_id', auth()->id())
+        ->where('product_id', $id)
+        ->first();
       if (checkUserForApi($lang, $user->id) !== true) {
         return checkUserForApi($lang, $user->id);
       }
       if ($cart != '') {
         $order = $cart->order;
-        $cart->delete();
         if($order != ''){
           if($order->subOrders->count() == 0){
             $order->delete();
           }
+          $cart->delete();
         }
       }
       $resArr = [
         'status' => true,
         'message' => trans('api.CartUpdatedSuccessfully'),
-        'data' => $user->myCart($lang)
+        'userCart' =>  $user->cartItems()
       ];
       return response()->json($resArr);
   }
