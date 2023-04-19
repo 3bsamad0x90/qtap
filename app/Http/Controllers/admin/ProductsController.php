@@ -70,9 +70,11 @@ class ProductsController extends Controller
       ]);
         $product->update($request->except('_token','image'));
         if($request->hasFile('image')){
-            unlink('uploads/products/'.$product->id.'/'.$product->image);
+            if($product->image != '' && file_exists('uploads/products/'.$product->id.'/'.$product->image)){
+                unlink('uploads/products/'.$product->id.'/'.$product->image);
+            }
             $product['image'] = upload_image_without_resize('products/'.$product->id , $request->image );
-             $product->update();
+            $product->update();
         }
         if($product){
             return redirect()->route('admin.products')

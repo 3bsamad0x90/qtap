@@ -2,7 +2,7 @@
 
 return [
     'dir' => 'ltr',
-    'cssFile' => 'css',
+    'cssFile' => 'css-rtl',
     'thisLang' => 'en',
     'otherLang' => 'ar',
     'langFlag' => 'us',

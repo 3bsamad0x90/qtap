@@ -43,7 +43,7 @@ Route::get('SwitchLang/{lang}',function($lang){
 	return Redirect::back();
 });
 Route::get('user/{email}/{lang}',function($email,$lang){
-    $user = App\User::where('email',base64_decode($email))->first()->update(['active'=>1]);
+    $user = App\Models\User::where('email',base64_decode($email))->first()->update(['active'=>1]);
     if ($lang == 'ar') {
         $html = '<div dir="rtl" style="padding-top:30px;font-size:16px;text-align:center;">';
         $html .= 'تم تفعيل حسابك بنجاح';
